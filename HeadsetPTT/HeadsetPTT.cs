@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using HeadsetPTT.Properties;
+﻿using HeadsetPTT.Properties;
 using HidSharp;
-using SimWinInput;
-using static System.Windows.Forms.AxHost;
+using Nefarius.ViGEm.Client.Exceptions;
 
 namespace HeadsetPTT
 {
@@ -40,8 +33,14 @@ namespace HeadsetPTT
         {
             Application.ApplicationExit += Application_ApplicationExit;
 
+            if (User.Default.downPtt > (int)Xbox360ButtonName.Y || User.Default.downPtt < -1)
+                User.Default.downPtt = -1;
+            if (User.Default.upPtt > (int)Xbox360ButtonName.Y || User.Default.upPtt < -1)
+                User.Default.upPtt = -1;
+
             settingsForm = new SettingsForm();
             _ = settingsForm.Handle;//this triggers the form to be created, allowing me to invoke without displaying form
+            settingsForm.UpdateConnectionState(connectionState, 0);
 
             trayMenu = new ContextMenuStrip();
             trayItemStatus = new ToolStripMenuItem("status") { Enabled = false };
@@ -80,7 +79,7 @@ namespace HeadsetPTT
                 Visible = false
             };
 
-            SimGamePad.Instance.Initialize();
+            InvokeUpdateTrayMenuState();
 
             cancellationToken = new CancellationTokenSource();
             deviceThread = new Thread(DeviceLoop) { IsBackground = true, Name = "HeadsetPTT Devices" };
@@ -92,7 +91,7 @@ namespace HeadsetPTT
             trayIconPtt.DoubleClick += TrayIcon_DoubleClick;
             DeviceList.Local.Changed += DeviceList_Local_Changed;
 
-            if(User.Default.firstRun)
+            if (User.Default.firstRun)
             {
                 User.Default.firstRun = false;
                 settingsForm.Show();
@@ -103,7 +102,6 @@ namespace HeadsetPTT
         {
             cancellationToken.Cancel();
             deviceThread.Join(1000);
-            SimGamePad.Instance.ShutDown();
         }
 
         private void DeviceLoop()
@@ -133,7 +131,14 @@ namespace HeadsetPTT
                             {
                                 if (devices[i] == null)
                                 {
-                                    devices[i] = new CM108Device(dev, i);
+                                    try
+                                    {
+                                        devices[i] = new CM108Device(dev);
+                                    }
+                                    catch(VigemBusNotFoundException)
+                                    {
+                                        MessageBox.Show("Could not find the VigEmBus Driver", "Driver Missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
                                     break;
                                 }
                             }

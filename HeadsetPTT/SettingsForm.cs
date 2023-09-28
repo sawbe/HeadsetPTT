@@ -1,5 +1,5 @@
 using HeadsetPTT.Properties;
-using SimWinInput;
+using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace HeadsetPTT
 {
@@ -8,11 +8,11 @@ namespace HeadsetPTT
         public SettingsForm()
         {
             InitializeComponent();
-            var items = Enum.GetNames<GamePadControl>();
+            var items = Enum.GetNames<Xbox360ButtonName>();
             downComboBox.Items.AddRange(items);
-            downComboBox.Text = ((GamePadControl)User.Default.downPtt).ToString();
+            downComboBox.Text = ((Xbox360ButtonName)User.Default.downPtt).ToString();
             upComboBox.Items.AddRange(items);
-            upComboBox.Text = ((GamePadControl)User.Default.upPtt).ToString();
+            upComboBox.Text = ((Xbox360ButtonName)User.Default.upPtt).ToString();
             Icon = Properties.Resources.headset_black;
         }
 
@@ -42,9 +42,9 @@ namespace HeadsetPTT
         private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (sender == downComboBox)
-                User.Default.downPtt = (int)Enum.Parse<GamePadControl>(downComboBox.Text);
+                User.Default.downPtt = (int)Enum.Parse<Xbox360ButtonName>(downComboBox.Text);
             else if (sender == upComboBox)
-                User.Default.upPtt = (int)Enum.Parse<GamePadControl>(upComboBox.Text);
+                User.Default.upPtt = (int)Enum.Parse<Xbox360ButtonName>(upComboBox.Text);
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)

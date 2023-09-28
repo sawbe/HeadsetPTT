@@ -19,4 +19,25 @@ namespace HeadsetPTT
         Up,
         Down,
     }
+
+    public enum Xbox360ButtonName
+    { 
+        None = -1,
+        Up,
+        Down,
+        Left,
+        Right,
+        Start,
+        Back,
+        LeftThumb,
+        RightThumb,
+        LeftShoulder,
+        RightShoulder,
+        Guide,
+        A,
+        B,
+        X,
+        Y
+    }
+
 }

@@ -25,12 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="HidSharpCore" Version="1.2.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="SimWinGamePadCore">
-      <HintPath>..\..\..\SimWinGamePadCore\SimWinGamePadCore\bin\Release\net6.0-windows\SimWinGamePadCore.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
   </ItemGroup>
 
   <ItemGroup>

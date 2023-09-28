@@ -1,6 +1,7 @@
 ﻿using HeadsetPTT.Properties;
 using HidSharp;
-using SimWinInput;
+using Nefarius.ViGEm.Client;
+using Nefarius.ViGEm.Client.Targets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,18 +22,21 @@ namespace HeadsetPTT
         public PushState PushState { get; private set; } = PushState.Up;
 
         private readonly HidDevice device;
-        private readonly int controllerIndex;
         private readonly byte[] data;
         private HidStream? stream;
         private DeviceState state;
         private IAsyncResult? readResult;
+        private readonly ViGEmClient vigemClient;
+        private readonly IXbox360Controller gamepad;
+        private DateTime upReleaseTime = DateTime.MaxValue;
 
-        public CM108Device(HidDevice device, int gamepadIndex)
+        public CM108Device(HidDevice device)
         {
-            this.device = device;
-            this.controllerIndex = gamepadIndex;    
+            this.device = device; 
             state = DeviceState.Connecting;
             data = new byte[device.GetMaxInputReportLength()];
+            vigemClient = new ViGEmClient();
+            gamepad = vigemClient.CreateXbox360Controller();
         }
 
         /// <summary>
@@ -51,7 +55,7 @@ namespace HeadsetPTT
 
                         stream.Write(gpio);//Set GPIO
 
-                        SimGamePad.Instance.PlugIn(controllerIndex);
+                        gamepad.Connect();
                         return true;
                     }
                     return false;
@@ -68,7 +72,7 @@ namespace HeadsetPTT
                         catch(ObjectDisposedException)
                         {
                             state = DeviceState.Closed;
-                            SimGamePad.Instance.Unplug(controllerIndex);
+                            gamepad.Disconnect();
                             return false;
                         }
                     }
@@ -86,16 +90,18 @@ namespace HeadsetPTT
                             catch(IOException)
                             {
                                 state = DeviceState.Closed;
-                                SimGamePad.Instance.Unplug(controllerIndex);
+                                gamepad.Disconnect();
                                 return false;
                             }
 
                             readResult = null;
                         }
+
+                        CheckUpRelease();
                     }
                     return true;
                 default:
-                    SimGamePad.Instance.Unplug(controllerIndex);
+                    gamepad.Disconnect();
                     return false;
             }
         }
@@ -105,13 +111,27 @@ namespace HeadsetPTT
             if (data[GPIO_RETURN_INDEX] == 0)//GPIO DOWN
             {
                 PushState = PushState.Down;
-                SimGamePad.Instance.SetControl((GamePadControl)User.Default.downPtt, controllerIndex);
+                if (User.Default.downPtt > (int)Xbox360ButtonName.None)
+                    gamepad.SetButtonState(User.Default.downPtt, true);
             }
             else
             {
                 PushState = PushState.Up;
-                SimGamePad.Instance.ReleaseControl((GamePadControl)User.Default.downPtt, controllerIndex);
-                SimGamePad.Instance.Use((GamePadControl)User.Default.upPtt, controllerIndex);
+                if (User.Default.downPtt > (int)Xbox360ButtonName.None)
+                    gamepad.SetButtonState(User.Default.downPtt, false);
+                if (User.Default.upPtt > (int)Xbox360ButtonName.None)
+                    gamepad.SetButtonState(User.Default.upPtt, true);
+                upReleaseTime = DateTime.Now + TimeSpan.FromMilliseconds(200);
+            }
+        }
+
+        private void CheckUpRelease()
+        {
+            if (DateTime.Now > upReleaseTime)
+            {
+                upReleaseTime = DateTime.MaxValue;
+                if (User.Default.upPtt > (int)Xbox360ButtonName.None)
+                    gamepad.SetButtonState(User.Default.upPtt, false);
             }
         }
     }
